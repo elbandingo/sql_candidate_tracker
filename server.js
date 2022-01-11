@@ -96,18 +96,83 @@ app.post('/api/candidate', ({body},res) => {
     });
 });
 
-//query for creating a candidate with params
-//const sql = `INSERT INTO candidates (id,first_name,last_name,industry_connected)
-//                VALUES (?,?,?,?)`;
-//const params = [1,'Ronald', 'Firbank', 1];
+//change a party for a candidate using PUT
+app.put('/api/candidate/:id', (req,res) => {
+    const errors = inputCheck(req.body, 'party_id');
+    if(errors) {
+        res.status(400).json({error: errors});
+        return;
+    }
+    const sql = `UPDATE candidates SET party_id = ? WHERE id = ?`
+    const params = [req.body.party_id, req.params.id];
+    db.query(sql,params,(err,result) => {
+        if (err) {
+            res.status(400).json({error:err.message});
+        } else if(!result.affectedRows) {
+            res.json({
+                message: "Candidate Not Found!"
+            });
+        } else {
+            res.json({
+                message: "success",
+                data: req.body,
+                changes: result.affectedRows
+            });
+        }
+    });
+});
 
-//db.query(sql, params, (err, result) => {
-//   if(err){
-//        console.log(err);
-//    }
-//    console.log(result);
-//})
+// GET route for parties table
+app.get('/api/parties', (req,res) => {
+    const sql = `SELECT * from parties`;
+    db.query(sql, (err,rows) => {
+        if (err) {
+            res.status(500).json({error: err.message});
+        }
+        res.json({
+            message: "success",
+            data: rows
+        });
+    });
+});
 
+//GET route for parties based on ID
+app.get('/api/party/:id', (req, res) => {
+    const sql = `SELECT * FROM parties WHERE id = ?`;
+    const params = [req.params.id];
+    db.query(sql, params, (err, row) => {
+      if (err) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      res.json({
+        message: 'success',
+        data: row
+      });
+    });
+  });
+
+//create delete route to remove party based on ID as param
+app.delete('/api/party/:id', (req,res) => {
+    const sql = `DELETE from parties where id = ?`;
+    const params = [req.params.id];
+    db.query(sql,params,(err,result) => {
+        if(err) {
+            res.status(400).json({error: err.message});
+        } else if(!result.affectedRows) {
+            res.json({
+                message: 'Party Not Found!'
+            });
+        } else {
+            res.json({
+                message: 'deleted',
+                changes: result.affectedRows,
+                id: req.params.id
+            });
+        }
+    });
+
+});
 
 //listen for any url to be bad, give a 404
 app.use((req,res) => {
